@@ -26,6 +26,8 @@ import time
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
+sys.path.insert(0, "/home/abu/Documents/Personal/ImageIdentifier/Frame-Prediction/Object Detection/Action_Recognition/")
+
 class ParallelThread(threading.Thread):
     
     flag = True
@@ -73,13 +75,14 @@ class ObjectDetector:
         images = np.asarray(images)
         return images
 
+
     def saveImage(self, image):
         image = Image.fromarray(image, 'RGB')
         image.save('filler.png')
         image.show()
 
     def validDifference(self, cord, coordinates, earlier_coordinates):
-        limit = 25
+        limit = 225
         if abs(coordinates[0][cord]-earlier_coordinates[0][cord])<limit and abs(coordinates[cord+1]-earlier_coordinates[cord+1])< limit:
             return True
         return False
@@ -103,18 +106,20 @@ class ObjectDetector:
 
     def formattedImage(self, image):
         image = image.transpose(2,0,1)
-        leftPad = round(float((400 - image.shape[1])) / 2)
-        rightPad = round(float(400 - image.shape[1]) - leftPad)
-        topPad = round(float((400 - image.shape[2])) / 2)
-        bottomPad = round(float(400 - image.shape[2]) - topPad)
+        leftPad = max(round(float((112 - image.shape[1])) / 2),0)
+        rightPad = max(round(float(112 - image.shape[1]) - leftPad),0)
+        topPad = max(round(float((112 - image.shape[2])) / 2),0)
+        bottomPad = max(round(float(112 - image.shape[2]) - topPad),0)
         pads = ((leftPad,rightPad),(topPad,bottomPad))
-        img_arr = np.ndarray((3,400,400),np.int)
+        img_arr = np.ndarray((3,112,112),np.int)
+        image = image[:,:112,:112]
+        print(image.shape)
         for i,x in enumerate(image):
             cons = np.int(np.median(x))
             x_p = np.pad(x,pads,'constant',constant_values=0)
             img_arr[i,:,:] = x_p
         
-        return np.uint8(img_arr).transpose(1,2,0)
+        return Image.fromarray(np.uint8(img_arr).transpose(1,2,0))
 
 
     def detect_objects(self, image, frame_count):
@@ -175,7 +180,7 @@ class ObjectDetector:
 
 
 c = ObjectDetector()
-cap = cv2.VideoCapture('running.avi')
+cap = cv2.VideoCapture('video1.mp4')
 i=int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 while(True and i>0):
     ret, frame = cap.read()
